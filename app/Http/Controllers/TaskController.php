@@ -25,7 +25,9 @@ class TaskController extends Controller
      */
     public function create()
     {
-        //
+        return view('tasks.create', [
+            'task' => new Task(),
+        ]);
     }
 
     /**
@@ -51,7 +53,9 @@ class TaskController extends Controller
      */
     public function show(Task $task)
     {
-        //
+        $this->authorizeTask($task);
+
+        return view('tasks.show', compact('task'));
     }
 
     /**
@@ -59,7 +63,9 @@ class TaskController extends Controller
      */
     public function edit(Task $task)
     {
-        //
+        $this->authorizeTask($task);
+
+        return view('tasks.edit', compact('task'));
     }
 
     /**
@@ -67,7 +73,19 @@ class TaskController extends Controller
      */
     public function update(Request $request, Task $task)
     {
-        //
+        $this->authorizeTask($task);
+
+        $data = $request->validate([
+            'title'       => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'due_date'    => 'nullable|date',
+            'status'      => 'required|in:pending,in_progress,completed',
+        ]);
+
+        $task->update($data);
+
+        return redirect()->route('tasks.index')
+            ->with('success', 'Task updated!');
     }
 
     /**
@@ -75,6 +93,16 @@ class TaskController extends Controller
      */
     public function destroy(Task $task)
     {
-        //
+        $this->authorizeTask($task);
+
+        $task->delete();
+
+        return redirect()->route('tasks.index')
+            ->with('success', 'Task deleted!');
+    }
+
+    private function authorizeTask(Task $task): void
+    {
+        abort_unless($task->user_id === auth()->id(), 403);
     }
 }
